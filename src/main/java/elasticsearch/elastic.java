@@ -10,12 +10,17 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.indices.IndexAlreadyExistsException;
 import org.elasticsearch.node.Node;
+import org.json.simple.JSONObject;
+import static org.elasticsearch.index.query.QueryBuilders.*;
 
 import com.opencsv.CSVReader;
 
@@ -28,6 +33,7 @@ public class elastic {
 	private Map<String, Object> jsonDocument;
 	private String csvFile;
 	private CSVReader reader;
+	QueryBuilder qb = matchAllQuery();
 
 	public elastic() {
 		cluster = "elasticsearch";
@@ -45,6 +51,7 @@ public class elastic {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+
 	}
 
 	public Map<String, Object> putJsonDocument(String forumUrl, String userAname, int postNumA, String userAurl,
@@ -86,7 +93,7 @@ public class elastic {
 		} catch (IndexAlreadyExistsException e) {
 			// TODO: handle exception
 			System.out.println(e.getLocalizedMessage());
-			// if index exist close the program
+			// if index exist close the program1
 			boolean exists = client.admin().indices().prepareExists(indexName).execute().actionGet().isExists();
 			if (exists) {
 				System.out.println("The Index was create");
@@ -96,7 +103,7 @@ public class elastic {
 
 	}
 
-	public void postElasticSearch(String docType) {
+	public void postElasticSearchZ(String docType) {
 		csvFile = "/Users/Daniel.Garcimartin/PycharmProjects/foroDoctoralia/z.csv";
 		reader = null;
 		try {
@@ -133,13 +140,71 @@ public class elastic {
 								usrAspecial, uniqIdMedc, userATxt, userAnumCollege, postNumQ, postNumExpAgre,
 								forumTitle, userAcity))
 						.get();
-			
+				
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		 closeClient();
+
+	}
+	
+	
+	public void postElasticSearchA(String docType) {
+		csvFile = "/Users/Daniel.Garcimartin/PycharmProjects/foroDoctoralia/a.csv";
+		reader = null;
+		try {
+			// reader = new CSVReader(new FileReader(csvFile));
+			reader = new CSVReader(new InputStreamReader(new FileInputStream(csvFile), "UTF-8"));
+			String[] documents;
+			String[] noLoQuiero = reader.readNext();
+			while ((documents = reader.readNext()) != null) {
+				String forumUrl = (String) documents[0];
+				String userAname = (String) documents[1];
+				int postNumA = Integer.parseInt(documents[2]);
+				String userAurlr = (String) documents[3];
+				String userQTxt = (String) documents[4];
+				int postNumPatGrate = Integer.parseInt(documents[5]);
+				String usrAspecial = (String) documents[6];
+				String uniqIdMedc = (String) documents[7];
+				String userATxt = (String) documents[8];
+				String userAnumCollege = (String) documents[9];
+				int postNumQ = Integer.parseInt(documents[10]);
+				int postNumExpAgre = Integer.parseInt(documents[11]);
+				String forumTitle = (String) documents[12];
+				String userAcity = (String) documents[13];
+
+				System.out.println("forumUrl***" + forumUrl + "name***" + userAname + "POSTnumAnswers***" + postNumA
+						+ "user_answer_url***" + userAurlr + "user_question_text***" + userQTxt
+						+ "post_num_patients_grateful***" + postNumPatGrate + "user_answer_specialities***"
+						+ usrAspecial + "unique_id_medicament***" + uniqIdMedc + "user_answer_text***" + userATxt
+						+ "user_answer_num_college***" + userAnumCollege + "post_num_questions***" + postNumQ
+						+ "post_num_experts_agreement***" + postNumExpAgre + "forum_title***" + forumTitle
+						+ "user_answer_city***" + userAcity);
+
+				client.prepareIndex(indexName, docType)
+						.setSource(putJsonDocument(forumUrl, userAname, postNumA, userAurlr, userQTxt, postNumPatGrate,
+								usrAspecial, uniqIdMedc, userATxt, userAnumCollege, postNumQ, postNumExpAgre,
+								forumTitle, userAcity))
+						.get();
 
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		
+		 closeClient();
 
+	}
+	
+	
+	public void mostrarQuery() {
+		qb = matchQuery("forumTitle", "Zitromax");
+		SearchRequestBuilder searchRequestBuilder = client.prepareSearch().setIndices("medicaments_z").setTypes("z")
+				.setQuery(qb).addHighlightedField("file");
+		SearchResponse response = searchRequestBuilder.execute().actionGet();
+		System.out.println(response);
 	}
 
 	public void closeClient() {
